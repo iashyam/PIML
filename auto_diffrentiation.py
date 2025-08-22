@@ -1,19 +1,27 @@
 import torch 
 import numpy as np
+from numpy import pi
+import matplotlib.pyplot as plt
 
-
+plt.style.use('ggplot')
 #dummy funtion
 def f(x):
-    return torch.sin(x)
+    return x**2
 
+N = 100
 
-x = torch.tensor([np.pi],  requires_grad=True)
-y = torch.sin(x)
+x = torch.linspace(-2*pi, 2*pi, N, requires_grad=True)
+# x = torch.tensor([np.pi, np.pi/2],  requires_grad=True)
+y = f(x)
 
-
-print(x)
-y.backward()
+external_grad = torch.ones(x.shape[0])
+y.backward(gradient=external_grad)
 a = x.grad
-a.backward()
-print(a.grad)
 
+print(f"a: {a} \n x: {x} \n y:  {y}")
+# print(torch.autograd.grad(y, x))
+
+plt.plot(x.detach().numpy(), y.detach().numpy(), label="f(x)")
+plt.plot(x.detach().numpy(), a.detach().numpy(), label="f'(x)")
+plt.legend()
+plt.show()
