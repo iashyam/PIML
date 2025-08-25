@@ -2,8 +2,10 @@ import torch
 import numpy as np
 from numpy import pi
 import matplotlib.pyplot as plt
+import os
 
-plt.style.use('ggplot')
+debug = os.getenv("DEBUG", 0)
+
 #dummy funtion
 def f(x):
     return x**2
@@ -18,7 +20,8 @@ external_grad = torch.ones(x.shape[0])
 y.backward(gradient=external_grad)
 a = x.grad
 
-print(f"a: {a} \n x: {x} \n y:  {y}")
+if debug:
+    print(f"a: {a} \n x: {x} \n y:  {y}")
 # print(torch.autograd.grad(y, x))
 
 plt.plot(x.detach().numpy(), y.detach().numpy(), label="f(x)")
