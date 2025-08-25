@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Repo Streak</title>
+  <style>
+    :root { --bg:#0b0f14; --fg:#e8eef5; --muted:#9fb3c8; --card:#131a22; --accent:#7dd3fc; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--fg); }
+    .wrap { max-width: 840px; margin: 0 auto; padding: 32px 20px; }
+    .card { background: var(--card); border-radius: 16px; padding: 28px; box-shadow: 0 6px 30px rgba(0,0,0,.25); }
+    h1 { margin: 0 0 12px 0; font-size: 28px; line-height: 1.2; }
+    .big { font-size: 44px; font-weight: 800; margin: 12px 0 6px 0; letter-spacing: .5px; }
+    .muted { color: var(--muted); }
+    .pill { display: inline-block; padding: 6px 10px; background: rgba(125,211,252,.12); border: 1px solid rgba(125,211,252,.35); color: var(--accent); border-radius: 999px; font-size: 12px; }
+    .footer { margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 14px; }
+    a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed rgba(125,211,252,.4); }
+    a:hover { opacity: .9; }
+    .grid { display:grid; gap:14px; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); margin-top:16px; }
+    .kv { background:#0e141b; border:1px solid rgba(255,255,255,.06); padding:12px 14px; border-radius:12px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="card">
+      <div class="pill">Live Streak</div>
+      <h1>I'm coding in this repo for</h1>
+      <div class="big" id="days">0 days straight</div>
+      <div class="muted">Asia/Kolkata timezone</div>
+
+      <section class="footer">
+        <div class="muted">Today's commit</div>
+        <div class="grid">
+          <div class="kv"><strong>Message</strong><br><span id="msg"></span></div>
+          <div class="kv"><strong>Author</strong><br><span id="author"></span></div>
+          <div class="kv"><strong>When</strong><br><span id="when"></span></div>
+          <div class="kv"><strong>Commit</strong><br><a id="url" href="#" target="_blank" rel="noopener">view on GitHub</a></div>
+        </div>
+        <div class="muted" id="note" style="margin-top:10px;"></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    // Values injected by the workflow
+    const DATA = {
+      streak: "__STREAK__",
+      sha: "__SHA__",
+      msg: "__MSG__",
+      author: "__AUTHOR__",
+      when: "__WHEN__",
+      url: "__URL__",
+      note: "__NOTE__"
+    };
+    const plural = (n) => n === 1 ? "day" : "days";
+    document.getElementById("days").textContent = `${DATA.streak} ${plural(Number(DATA.streak))} straight`;
+    document.getElementById("msg").textContent = DATA.msg || "(no message)";
+    document.getElementById("author").textContent = DATA.author || "-";
+    document.getElementById("when").textContent = DATA.when || "-";
+    document.getElementById("url").href = DATA.url || "#";
+    document.getElementById("note").textContent = DATA.note || "";
+  </script>
+</body>
+</html>

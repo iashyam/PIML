@@ -1,0 +1,122 @@
+name: Build Streak Page
+
+on:
+  push:
+    branches: [ main ]   # change if your default branch is different
+  workflow_dispatch:      # run manually when you want
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Kolkata
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # fetch full history so streak calc can look back
+          fetch-depth: 0
+
+      - name: Compute streak (consecutive days ending today)
+        id: streak
+        shell: bash
+        run: |
+          # collect commit dates (author date) as YYYY-MM-DD in Asia/Kolkata
+          mapfile -t DATES < <(git log --date=format:%Y-%m-%d --pretty=%ad)
+          # put into an associative set
+          declare -A HAS
+          for d in "${DATES[@]}"; do HAS["$d"]=1; done
+
+          TODAY=$(date +%Y-%m-%d)
+          STREAK=0
+          i=0
+          while true; do
+            DAY=$(date -d "$TODAY - $i day" +%Y-%m-%d)
+            if [[ ${HAS[$DAY]+x} ]]; then
+              ((STREAK++))
+              ((i++))
+            else
+              # if no commit today, your streak ends at yesterday
+              # but we still compute consecutive until the first gap
+              break
+            fi
+          done
+
+          echo "streak=$STREAK" >> "$GITHUB_OUTPUT"
+
+      - name: Grab latest commit info (today’s)
+        id: latest
+        shell: bash
+        run: |
+          # latest commit (the push that triggered this workflow)
+          SHA=$(git rev-parse --short HEAD)
+          MSG=$(git log -1 --pretty=%s)
+          AUTHOR=$(git log -1 --pretty=%an)
+          WHEN=$(date -d "$(git log -1 --pretty=%ad --date=iso-strict)" +'%Y-%m-%d %H:%M %Z')
+          REPO="$GITHUB_REPOSITORY"
+          URL="https://github.com/$REPO/commit/$(git rev-parse HEAD)"
+
+          # was this commit "today" in Asia/Kolkata?
+          TODAY=$(date +%Y-%m-%d)
+          COMMIT_DAY=$(TZ=Asia/Kolkata date -d "$(git log -1 --pretty=%ad --date=iso-strict)" +%Y-%m-%d)
+          if [[ "$COMMIT_DAY" != "$TODAY" ]]; then
+            # If you push late and it lands past midnight, mark it clearly.
+            TODAY_NOTE="(latest commit isn’t on today’s date in your TZ)"
+          else
+            TODAY_NOTE=""
+          fi
+
+          {
+            echo "sha=$SHA"
+            echo "msg=$MSG"
+            echo "author=$AUTHOR"
+            echo "when=$WHEN"
+            echo "url=$URL"
+            echo "note=$TODAY_NOTE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate HTML
+        shell: bash
+        run: |
+          STREAK="${{ steps.streak.outputs.streak }}"
+          SHA="${{ steps.latest.outputs.sha }}"
+          MSG="${{ steps.latest.outputs.msg }}"
+          AUTHOR="${{ steps.latest.outputs.author }}"
+          WHEN="${{ steps.latest.outputs.when }}"
+          URL="${{ steps.latest.outputs.url }}"
+          NOTE="${{ steps.latest.outputs.note }}"
+          sed -i "s/__STREAK__/$STREAK/g" public/index.html"
+          sed -i "s|__URL__|$URL|g" public/index.html"
+          sed -i "s/__SHA__/$SHA/g" public/index.html"
+          sed -i "s/__MSG__/$(printf '%s' "$MSG" | sed 's/[&/]/\\&/g')/g" public/index.html"
+          sed -i "s/__AUTHOR__/$(printf '%s' "$AUTHOR" | sed 's/[&/]/\\&/g')/g" public/index.html"
+          sed -i "s/__WHEN__/$(printf '%s' "$WHEN" | sed 's/[&/]/\\&/g')/g" public/index.html"
+          sed -i "s/__NOTE__/$(printf '%s' "$NOTE" | sed 's/[&/]/\\&/g')/g" public/index.html"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
