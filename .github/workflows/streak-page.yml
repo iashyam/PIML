@@ -41,15 +41,14 @@ jobs:
           i=0
           while true; do
             DAY=$(date -d "$TODAY - $i day" +%Y-%m-%d)
-            if [[ ${HAS[$DAY]+x} ]]; then
-              ((STREAK++))
-              ((i++))
+            if [[ -n ${HAS[$DAY]} ]]; then
+              STREAK=$((STREAK + 1))
+              i=$((i + 1))
             else
-              # if no commit today, your streak ends at yesterday
-              # but we still compute consecutive until the first gap
               break
             fi
           done
+
 
           echo "streak=$STREAK" >> "$GITHUB_OUTPUT"
 
