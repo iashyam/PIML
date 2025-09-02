@@ -1,3 +1,5 @@
+## things that take space:
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -5,7 +7,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+*.swp
 # Distribution / packaging
 .Python
 build/
