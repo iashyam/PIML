@@ -7,6 +7,9 @@ from tqdm import tqdm
 ## setting command line variables
 gpu = os.getenv("GPU", 0)
 debug = os.getenv("DEBUG", 0)
+import matplotlib.pyplot as plt
+import numpy as np
+plt.style.use('ggplot')
 
 class Model(nn.Module):
 
@@ -47,7 +50,7 @@ def f(t, x):
 	u_t = grad(u_, t, torch.ones_like(u_), create_graph=True, allow_unused=True)[0]
 	u_x = grad(u_, x, torch.ones_like(u_), create_graph=True, allow_unused=True)[0]
 	u_xx = grad(u_x, x, torch.ones_like(u_), create_graph=True, allow_unused=True)[0]
-	return u_t + u_ * u_x - (0.1/torch.pi) * u_xx
+	return u_t + u_ * u_x - (0.01/torch.pi) * u_xx
 
 
 class myDataset(Dataset):
@@ -72,6 +75,10 @@ class myDataset(Dataset):
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 def train(dataloader, lamda: float=0.35 , EPOCHS=20):
 	criterion = nn.MSELoss()
+	history = {}
+	history['loss'] = []
+	history['f_loss'] = []
+	history['u_loss'] = []
 	model.train()
 	k = 0 
 	for i in (bar := tqdm(range(EPOCHS))):
@@ -80,15 +87,15 @@ def train(dataloader, lamda: float=0.35 , EPOCHS=20):
 		running_u_loss = 0 
 		for tu, xu, u_, tf, xf in dataloader:
 			optimizer.zero_grad()
-			if debug: print(xu.shape, tu.shape)
+			if debug==3: print(xu.shape, tu.shape)
 			input_tensor = torch.cat([tu, xu], dim=-1)
 			u_pred = model(input_tensor)
 			u_loss = criterion(u_pred, u_)
 			f_pred = f(tf, xf)
 			assert u_pred.shape == u_.shape, f"u_pred shape {u_pred.shape}, u shape {u_.shape}!"
 			f_loss = criterion(f_pred, torch.zeros_like(f_pred))
-			loss = (lamda)*u_loss + (1-lamda)*f_loss
-			# loss = u_loss + f_loss
+			# loss = (lamda)*u_loss + (1-lamda)*f_loss
+			loss = u_loss + f_loss
 			loss.backward()
 			optimizer.step()
 			# running_loss /= len(dataloader
@@ -96,7 +103,11 @@ def train(dataloader, lamda: float=0.35 , EPOCHS=20):
 			running_f_loss += u_loss.item()
 			running_u_loss += f_loss.item()
 		bar.set_description(f"epoch {i}, loss: {running_loss:.4f}, f_loss: {running_f_loss:.4f} u_loss: {running_u_loss:.4f}")
+		history['loss'].append(running_loss)
+		history['f_loss'].append(running_f_loss)
+		history['u_loss'].append(running_u_loss)
 
+	return history
 
 def predict(t, x):
 	model.eval()
@@ -104,8 +115,6 @@ def predict(t, x):
 	    return u(t, x)
 	
 def plot_results(t: float):
-	import matplotlib.pyplot as plt
-	import numpy as np
 	x = np.linspace(-1, 1, 256)
 	x_tensor = torch.tensor(x, dtype=torch.float32).unsqueeze(-1)
 	t_tensor = torch.tensor(t, dtype=torch.float32).unsqueeze(-1).repeat(1, x_tensor.shape[0]).T
@@ -117,13 +126,23 @@ def plot_results(t: float):
 	plt.ylabel('u(t,x)')
 	plt.title(f'PINN Prediction vs Exact Solution at t={t}')
 	plt.legend()
+	plt.savefig("comprison.png", dpi=250)
+	plt.show()
+
+def plot_history(history):
+	
+	plt.plot(history['loss'], label='loss')
+	plt.plot(history['f_loss'], label='f_loss')
+	plt.plot(history['u_loss'], label='u_loss')
+	plt.legend()
+	plt.savefig("losses.png", dpi=250)
 	plt.show()
 
 if __name__=="__main__":
 	
 	#put the intials and boundary conditions here
-	Nu = 1000
-	Nf = 2*Nu
+	Nu = 100
+	Nf = 10000 
 	x_u_b = torch.floor(torch.rand(Nu)*2)*2-1
 	t_u_b = torch.rand(Nu)
 	u_b = torch.zeros(Nu)
@@ -137,12 +156,11 @@ if __name__=="__main__":
 	x_f = torch.rand(Nf)*2-1
 	t_f = torch.rand(Nf)
 
-	print(f"x_u: {x_u.shape}, t_u: {t_u.shape}, u: {u_.shape}, x_f: {x_f.shape}, t_f: {t_f.shape}")
-
 	dataset = myDataset(t_u, x_u, u_, t_f, x_f)
-	dataloader = DataLoader(dataset, batch_size=100, shuffle=True)
-	train(dataloader,0, EPOCHS=200)
+	dataloader = DataLoader(dataset, batch_size=50, shuffle=True)
+	history = train(dataloader,0.5, EPOCHS=1000)
 	torch.save(model.state_dict(), "pinn.pth")
 
-plot_results(0.2)
-
+	plot_results(0.5)
+	plot_results(0.75)
+	plot_history(history)
