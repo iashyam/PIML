@@ -1,3 +1,4 @@
+#!/home/taylor/anaconda3/bin/python
 import torch 
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
@@ -14,21 +15,24 @@ plt.style.use('ggplot')
 class Model(nn.Module):
 
 	def __init__(self):
-	    super().__init__()
-	    self.net = nn.Sequential(
-	        nn.Linear(2,20),
+		super().__init__()
+		self.net = nn.Sequential(
+			nn.Linear(2,20),
 	        nn.Tanh(), 
 			nn.Linear(20,20),
 			nn.Tanh(), 
+			nn.Dropout(p=0.34),
+			nn.Linear(20,20),
+			nn.Tanh(), 
+			nn.Linear(20,20),
+			nn.Tanh(), 
+			nn.Dropout(p=0.34),
 			nn.Linear(20,20),
 			nn.Tanh(), 
 			nn.Linear(20,20),
 			nn.Tanh(), 
 			nn.Linear(20,20),
-			nn.Tanh(), 
-			nn.Linear(20,20),
-			nn.Tanh(), 
-			nn.Linear(20,20),
+			nn.Dropout(p=0.34),
 			nn.Tanh(), 
 			nn.Linear(20,32),
 			nn.Tanh(), 
@@ -91,7 +95,6 @@ def train(Ni, Nb, Nf, BF, lamda: float=0.35 , EPOCHS=20):
 		b_loss = criterion(ub_hat, ub)	
 		ui_hat = u(ti, xi)
 		i_loss = criterion(ui_hat, ui)	
-		
 		u_loss = b_loss + i_loss
 		
 		uf = f(xf, tf)
@@ -119,6 +122,7 @@ def predict(t, x):
 	    return u(t, x)
 	
 def plot_results(t: float):
+
 	N = 250
 	x = np.linspace(-1, 1, N)
 	x_tensor = torch.tensor(x, dtype=torch.float32).unsqueeze(-1)
@@ -131,7 +135,7 @@ def plot_results(t: float):
 	plt.ylabel('u(t,x)')
 	plt.title(f'PINN Prediction vs Exact Solution at t={t}')
 	plt.legend()
-	plt.savefig("static/images/comprison.png", dpi=250)
+	plt.savefig(f"static/images/comprison at{t}.png", dpi=250)
 	plt.show()
 
 def plot_cmap(xu, tu):
@@ -151,6 +155,8 @@ def plot_history(history):
 if __name__=="__main__":
 	
 	BF = lambda x: -torch.sin(torch.pi*x)
-	history = train(Ni=100, Nb=100, Nf=10000, BF=BF, lamda=0.35 , EPOCHS=1000)
+	history = train(Ni=300, Nb=300, Nf=20000, BF=BF, lamda=0.35 , EPOCHS=1000)
 	plot_history(history)
 	plot_results(0.25)
+	plot_results(0.75)
+	plot_results(0.50)
