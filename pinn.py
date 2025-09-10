@@ -21,12 +21,10 @@ class Model(nn.Module):
 	        nn.Tanh(), 
 			nn.Linear(20,20),
 			nn.Tanh(), 
-			nn.Dropout(p=0.34),
 			nn.Linear(20,20),
 			nn.Tanh(), 
 			nn.Linear(20,20),
 			nn.Tanh(), 
-			nn.Dropout(p=0.34),
 			nn.Linear(20,20),
 			nn.Tanh(), 
 			nn.Linear(20,20),
@@ -99,12 +97,11 @@ def train(Ni, Nb, Nf, BF, lamda: float=0.35 , EPOCHS=20):
 		
 		uf = f(xf, tf)
 		f_loss = criterion(uf, torch.zeros_like(uf))
-		loss = u_loss + f_loss
+		loss = 2* lamda * u_loss + 2 * (1-lamda) * f_loss
 		
 		optimizer.zero_grad()
 		loss.backward()
 		optimizer.step()
-
 		running_loss += loss.item() 
 		running_f_loss += f_loss.item()
 		running_u_loss += u_loss.item()
@@ -155,7 +152,7 @@ def plot_history(history):
 if __name__=="__main__":
 	
 	BF = lambda x: -torch.sin(torch.pi*x)
-	history = train(Ni=300, Nb=300, Nf=20000, BF=BF, lamda=0.35 , EPOCHS=1000)
+	history = train(Ni=100, Nb=100, Nf=10000, BF=BF, lamda=0.50 , EPOCHS=5000)
 	plot_history(history)
 	plot_results(0.25)
 	plot_results(0.75)
