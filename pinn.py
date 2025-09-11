@@ -58,15 +58,15 @@ def f(t, x):
 
 def curate_data(Ni, Nb, Nf, BF):
 
-	xb = (torch.floor(torch.rand(Ni)*2)*2-1).unsqueeze(1)
-	tb = torch.rand(Ni).unsqueeze(1)
-	ub = torch.zeros(Ni).unsqueeze(1)
-	xi = (torch.rand(Nb)*2-1).unsqueeze(1)
-	ti = torch.zeros(Nb).unsqueeze(1)
+	xb = (torch.floor(torch.rand(size=(Nb,1))*2)*2-1)
+	tb = torch.rand(size=(Nb,1))
+	ub = torch.zeros(size=(Nb,1))
+	xi = (torch.rand(size=(Ni, 1))*2-1)
+	ti = torch.zeros(size=(Ni, 1))
 	ui = BF(xi)
 	
-	xf = (torch.rand(Nf)*2-1).unsqueeze(1)
-	tf = torch.rand(Nf).unsqueeze(1)
+	xf = (torch.rand(size=(Nf, 1))*2-1)
+	tf = torch.rand(size=(Nf, 1))
 	
 	return [xb, tb, ub, xi, ti, ui, xf, tf]
 
