@@ -5,6 +5,8 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# images
+/static/images
 # C extensions
 *.so
 *.swp
